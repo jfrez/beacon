@@ -1,0 +1,174 @@
+<html lang="en">
+<head>
+<meta charset=utf-8>
+<meta name="viewport" content="width=300">
+</head>
+<body>
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+<script src="jquery.min.js"></script>
+<script>
+var map,marker;
+var cars = Array();
+function success(position) {
+  
+  var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+  var myOptions = {
+    zoom: 15,
+    center: latlng,
+    mapTypeControl: false,
+    navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
+    mapTypeId: google.maps.MapTypeId.ROADMAP
+  };
+   map = new google.maps.Map(document.getElementById("mapcanvas"), myOptions);
+  
+   marker = new google.maps.Marker({
+      position: latlng, 
+      map: map, 
+      title:"You are here! (at least within a "+position.coords.accuracy+" meter radius)"
+  });
+}
+
+function addcar(pos){
+ var marker = new google.maps.Marker({
+      position: pos,
+      map: map,
+	icon:"car.png"
+  });
+return marker;
+
+}
+
+function getcars(){
+$.ajax({
+        url:"http://www.taxiscolectivos.com/?/beacon/getreport",
+        dataType:"json",
+        type:"post",
+        success:function(data){
+		for(m in cars){
+		cars[m].setMap(null);
+		}
+		cars = Array();
+        for(pos in data){
+                var newmarker= new google.maps.LatLng(data[pos].lat, data[pos].lng);
+              var car= addcar(newmarker);
+		cars.push(car);
+        }
+        }
+});
+
+
+
+}
+function error(msg) {
+   console.log(msg);
+}
+
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(success, error);
+} else {
+  error('not supported');
+}
+$(function(){
+setInterval("getcars()",10000);
+$("#round").click(function(){
+$("#round").fadeOut();
+$("#bg").removeClass("bg1");
+$("#bg").addClass("bg2");
+ marker.setAnimation(google.maps.Animation.BOUNCE);
+var lat = marker.getPosition().lat();
+var lng= marker.getPosition().lng();
+$.ajax({
+	url:"http://www.taxiscolectivos.com/?/beacon/add",
+	type:"POST",
+	data:{lat:lat,lng:lng}
+	});
+colorcicle();
+});
+
+
+});
+var app = {bg: {color:2}};
+function colorcicle(){
+if( app.bg.color ==2){
+$("#bg").removeClass("bg2");
+$("#bg").addClass("bg1");
+app.bg.color=1;
+}else{
+$("#bg").removeClass("bg1");
+$("#bg").addClass("bg2");
+app.bg.color=2;
+
+}
+setTimeout("colorcicle()",1000);
+}
+</script>
+<div class="bg1" id="bg">
+<div id="mapcanvas"></div>
+<input id="round" type="submit" value="Beacon!" />
+</div>
+
+<style>
+#bg{
+height:100%;
+width:100%;
+
+}
+#mapcanvas{
+width:100%;
+height:70%;
+}
+body{
+width:100%;
+margin: 0;
+padding: 0;
+}
+input#round{
+position:absolute;
+z-index:10000;
+margin-top:-50px;
+margin-left:100;
+width:100; /*same as the height*/
+height:100; /*same as the width*/
+background-color:#ff0000;
+border:1px solid #ff0000; /*same colour as the background*/
+color:#fff;
+font-size:1.6em;
+/*set the border-radius at half the size of the width and height*/
+-webkit-border-radius: 50px;
+-moz-border-radius: 50px;
+border-radius: 50px;
+/*give the button a small drop shadow*/
+-webkit-box-shadow: 0 0 10px rgba(0,0,0, .75);
+-moz-box-shadow: 0 0 10px rgba(0,0,0, .75);
+box-shadow: 2px 2px 15px rgba(0,0,0, .75);
+}
+/***NOW STYLE THE BUTTON'S HOVER STATE***/
+input#round:hover{
+background:#c20b0b;
+border:1px solid #c20b0b;
+/*reduce the size of the shadow to give a pushed effect*/
+-webkit-box-shadow: 0px 0px 5px rgba(0,0,0, .75);
+-moz-box-shadow: 0px 0px 5px rgba(0,0,0, .75);
+box-shadow: 0px 0px 5px rgba(0,0,0, .75);
+}
+
+.bg1 {
+    background-color: #add8e6;
+    -webkit-transition: background-color 1000ms linear;
+    -moz-transition: background-color 1000ms linear;
+    -o-transition: background-color 1000ms linear;
+    -ms-transition: background-color 1000ms linear;
+    transition: background-color 1000ms linear;
+}
+
+.bg2 {
+    background-color: #0000FF;
+    -webkit-transition: background-color 1000ms linear;
+    -moz-transition: background-color 1000ms linear;
+    -o-transition: background-color 1000ms linear;
+    -ms-transition: background-color 1000ms linear;
+    transition: background-color 1000ms linear;
+}
+
+</style>
+
